@@ -1,11 +1,17 @@
 import utils
 import pandas as pd
+import numpy as np
 from scipy.stats import ttest_rel
 
 
-stimulus = "Objects"
+stimulus = "Direction"
+alternative = "two-sided"
+patients_excluded = [114]
+
+
 data = pd.read_excel("MDLO.xlsx", sheet_name=stimulus)
 data["Before_After"] = data["Visit"].apply(lambda x: "Baseline" if x == "Baseline" else "Post-Treatment")
+data = data[~data["Patient"].isin(patients_excluded)]
 data = data.groupby(["Patient", "Before_After"]).agg(
     {
         "N correct": "sum",
@@ -28,26 +34,23 @@ std(binomial) = sqrt( n * p * (1-p))
 std err (bin) = std(binomial) / n = sqrt( p * (1-p) / n)
 '''
 
-data["Binomial_error"] = (data["Mean_accuracy"] * (1 - data["Mean_accuracy"]) / data["N total"]) ** 0.5
-
+data = utils.df_binomial_error(data, "Mean_accuracy", "N total")
 # Use the baseline mean accuracy as the null hypothesis
-data = utils.t_test_df(data, "Mean_accuracy", null_mean_col="Null_mean", degrees_col="N total", error_col="Binomial_error", tails="right", alpha=0.05)
 diffs = data[data["Before_After"] == "Baseline"].merge(data[data["Before_After"] == "Post-Treatment"], on="Patient",
                                                         suffixes=("_before", "_after"),
                                                         how="outer")
-diffs["Improvement"] = diffs["Mean_accuracy_after"] - diffs["Mean_accuracy_before"]
-diffs = diffs[["Patient", "Improvement"]].fillna(0)
-print ("Paired sample improvement in (n=%d patients) on "%diffs.shape[0], stimulus, "\n" + "="*150)
-print (ttest_rel([0] * diffs.shape[0], diffs["Improvement"].values, alternative="two-sided"), "\n" + "="*150)
+diffs["Improvement on %s"%stimulus] = diffs["Mean_accuracy_after"] - diffs["Mean_accuracy_before"]
+diffs = diffs[["Patient", "Improvement on %s"%stimulus]].fillna(0)
+mean_improvement, std_improvement, sem_improvement, _ = utils.mean_and_sem(diffs, "Improvement on %s"%stimulus, verbose=True)
+print ("Paired %s sample improvement in (n=%d patients) on "%(alternative, diffs.shape[0]), stimulus, "\n" + "="*150)
+print (diffs.to_string())
+print (ttest_rel([0] * diffs.shape[0], diffs["Improvement on %s"%stimulus].values, alternative=alternative), "\n" + "="*150)
 
 
 improvements = data[data["Before_After"] == "Post-Treatment"]
 print ("Individual patient improvement for patients:", ",".join(data["Patient"].astype(str).unique()), " on ", stimulus, "\n" + "="*150)
 print (improvements.to_string())
 print ("="*150)
-
-
-#print (ttest_rel(data[data["Before_After"] == "Baseline"]["Mean_accuracy"].values, data[data["Before_After"] == "Post-Treatment"]["Mean_accuracy"].values, alternative="two-sided"))
 
 
 

@@ -1,6 +1,9 @@
 import utils
+import numpy as np
 import pandas as pd
 from scipy.stats import ttest_rel
+
+patients_excluded = [114]
 
 
 '''
@@ -8,15 +11,17 @@ Note that acuity "improvement" is a negative logMAR change, so either use a nega
 an absolute mean with a right-tailed test.
 '''
 group_data = pd.read_excel("logMAR.xlsx", sheet_name="data")
-mean_improvement = group_data["logMAR Improvement, 50% Threshold"].mean()
-std_improvement = group_data["logMAR Improvement, 50% Threshold"].std()
-n = group_data["logMAR Improvement, 50% Threshold"].count()
-sem_improvement = std_improvement / n ** 0.5
+group_data = group_data[~group_data["Patient"].isin(patients_excluded)]
+mean_improvement, std_improvement, sem_improvement, n = utils.mean_and_sem(group_data,  "logMAR Improvement, 50% Threshold", verbose=False)
+
+
 '''
 Paired-t test for the mean improvement in logMAR acuity using a 50% threshold.
 You can calculate the differences yourself or feed the original data to the ttest_rel function- it doesn't 
 matter because it's either a (diff - 0) = diff or (after - before) = diff.
 '''
+
+print ("logMAR Mean Improvement ± SEM:", np.round(mean_improvement, 4), "±", np.round(sem_improvement, 4))
 print ("Paired sample improvement in (n=%d patients) on acuity "%n, "\n" + "="*150)
 print (utils.t_test_numbers(abs(mean_improvement), null=0, error=sem_improvement, df=n-1, tails="both", alpha=0.05))
 print (ttest_rel([0] * n, group_data["logMAR Improvement, 50% Threshold"].values, alternative="two-sided"))
