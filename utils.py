@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from scipy import stats
-
 N_DECIMALS = 4
+
+
+
 def df_binomial_error(df, col, n_col):
     df["Binomial_error"] = (df[col] * (1 - df[col]) / df[n_col]) ** 0.5
     return df
@@ -54,11 +56,12 @@ def t_test_df(df, mean_col, degrees_col, null_mean_col, error_col, tails="right"
     :param tails:
     :param alpha:
     :return:
+
     '''
     df["t_stat"] = (df[mean_col] - df[null_mean_col]) / df[error_col]
     t_test_lambda = lambda df: stats.t.cdf(df["t_stat"], df=df[degrees_col])
     if tails == "right_and_left" or tails == "both" or tails == "two-sided":
-        df["p_value"] = 2 * np.abs(df.apply(t_test_lambda, axis=1))
+        df["p_value"] = 2 * (1 - np.abs(df.apply(t_test_lambda, axis=1)))
     elif tails == "right" or tails == "greater":
         df["p_value"] =  np.abs(1 - df.apply(t_test_lambda, axis=1))
     elif tails == "left" or tails == "less":

@@ -1,4 +1,5 @@
 import utils
+from groupings import *
 import pandas as pd
 import numpy as np
 from scipy.stats import ttest_rel
@@ -7,11 +8,19 @@ from scipy.stats import ttest_rel
 stimulus = "Direction"
 alternative = "two-sided"
 patients_excluded = [114]
+dose_group = "all" # "1", "2", "3", "4", or "all"
+patient_group = "all" # "low-vision", "tunnel-vision", or "all"
 
 
 data = pd.read_excel("MDLO.xlsx", sheet_name=stimulus)
-data["Before_After"] = data["Visit"].apply(lambda x: "Baseline" if x == "Baseline" else "Post-Treatment")
 data = data[~data["Patient"].isin(patients_excluded)]
+data["Before_After"] = data["Visit"].apply(lambda x: "Baseline" if x == "Baseline" else "Post-Treatment")
+data["Patient_group"] = data["Patient"].map(HIGH_DOSE_PATIENT_GROUPS)
+data["Dose_group"] = data["Patient"].map(DOSE_GROUPS)
+if dose_group != "all":
+    data = data[data["Dose_group"] == dose_group]
+if patient_group != "all":
+    data = data[data["Patient_group"] == patient_group]
 data = data.groupby(["Patient", "Before_After"]).agg(
     {
         "N correct": "sum",
@@ -19,6 +28,8 @@ data = data.groupby(["Patient", "Before_After"]).agg(
     }
 )
 data["Mean_accuracy"] = data["N correct"] / data["N total"]
+
+
 patient_baselines = pd.DataFrame(data.query("Before_After == 'Baseline'")["Mean_accuracy"])\
                                 .reset_index()
 patient_baselines = patient_baselines.drop(columns=["Before_After"])\
@@ -46,7 +57,7 @@ print ("Paired %s sample improvement in (n=%d patients) on "%(alternative, diffs
 print (diffs.to_string())
 print (ttest_rel([0] * diffs.shape[0], diffs["Improvement on %s"%stimulus].values, alternative=alternative), "\n" + "="*150)
 
-
+data = utils.t_test_df(data, "Mean_accuracy", degrees_col="N total", null_mean_col="Null_mean", error_col="Binomial_error", tails="both", alpha=0.05)
 improvements = data[data["Before_After"] == "Post-Treatment"]
 print ("Individual patient improvement for patients:", ",".join(data["Patient"].astype(str).unique()), " on ", stimulus, "\n" + "="*150)
 print (improvements.to_string())
