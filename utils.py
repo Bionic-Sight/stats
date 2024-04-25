@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from scipy import stats
-N_DECIMALS = 4
+N_DECIMALS = 6
 
 
 
-def df_binomial_error(df, col, n_col):
-    df["Binomial_error"] = (df[col] * (1 - df[col]) / df[n_col]) ** 0.5
+def df_binomial_error(df, col, n_col, eps=1e-6):
+    df["Binomial_error"] = (df[col] * (1 - df[col]) / (df[n_col]) ** 0.5 + eps)
     return df
 
 def mean_and_sem(diffs_df, col, verbose=False):
@@ -73,6 +73,9 @@ def t_test_df(df, mean_col, degrees_col, null_mean_col, error_col, tails="right"
     df["significant"] = df["p_value"] < alpha
     return df
 
+def bump_to_chance(df, col, chance_value):
+    df.loc[df[col] < chance_value,col] = chance_value
+    return df
 
 def t_test_numbers(sample_mean, null, error, df, tails="right", alpha=0.05):
     t_stat = (sample_mean - null) / error
@@ -85,3 +88,11 @@ def t_test_numbers(sample_mean, null, error, df, tails="right", alpha=0.05):
     else:
         raise ValueError("tails must be 'right', 'left', or 'two-sided'")
     return t_stat, p_value, p_value < alpha
+
+
+SCIPY_ALTS = {
+    "right": "greater",
+    "left": "less",
+    "both": "two-sided",
+    "right_and_left": "two-sided"
+}

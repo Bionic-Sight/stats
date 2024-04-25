@@ -1,15 +1,21 @@
-HIGH_DOSE_PATIENT_GROUPS = {
+PATIENT_GROUPS = {
     107: "low-vision",
-    115: "low-vision",
+    115: "non-chart",
     120: "low-vision",
     108: "tunnel-vision",
-    109: "tunnel-vision",
+    109: "non-chart",
     113: "tunnel-vision",
     116: "tunnel-vision",
     118: "tunnel-vision",
     119: "tunnel-vision",
     121: "tunnel-vision",
     122: "tunnel-vision",
+    101: "low-vision",
+    103: "low-vision",
+    104: "low-vision",
+    105: "low-vision",
+    106: "low-vision",
+
 }
 
 DOSE_GROUPS = {
